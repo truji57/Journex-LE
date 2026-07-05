@@ -45,6 +45,7 @@ function App() {
   const [editSessionName, setEditSessionName] = useState('')
   const [editSessionCapital, setEditSessionCapital] = useState('')
   const [theme, setTheme] = useState(() => localStorage.getItem('journex-theme') || 'dark-blue')
+  const importTradesRef = useRef(null)
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -115,10 +116,10 @@ function App() {
       const trades = JSON.parse(raw)
       sessionStorage.removeItem('importedTrades')
       sessionStorage.removeItem('importPlatform')
-      importTrades(trades)
+      importTradesRef.current?.(trades)
       setActiveTab('trades')
     } catch (e) { console.error('Error importando trades desde sessionStorage', e) }
-  })
+  }, [selectedSession])
 
   useEffect(() => {
     if (showForm && formRef.current) {
@@ -254,6 +255,10 @@ function App() {
       notify.error('Error al importar: ' + e.message)
     }
   }
+
+  useEffect(() => {
+    importTradesRef.current = importTrades
+  })
 
   const backupSession = async () => {
     if (!selectedSession) return

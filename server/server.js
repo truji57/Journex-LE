@@ -2,6 +2,7 @@ const express = require('express')
 const cors = require('cors')
 const fs = require('fs')
 const path = require('path')
+const Papa = require('papaparse')
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -23,55 +24,78 @@ function writeJSON(file, data) {
   fs.writeFileSync(file, JSON.stringify(data, null, 2))
 }
 
-const CSV_HEADERS = ['id', 'sessionId', 'symbol', 'action', 'type', 'entryPrice', 'exitPrice', 'stopLoss', 'takeProfit', 'lots', 'result', 'profit', 'rMultiple', 'fees', 'tags', 'emotions', 'strategy', 'screenshots', 'entryDate', 'exitDate', 'notes', 'createdAt', 'date', 'data']
-
-function escapeCSV(val) {
-  if (val === null || val === undefined) return ''
-  const s = typeof val === 'object' ? JSON.stringify(val) : String(val)
-  if (s.includes(',') || s.includes('"') || s.includes('\n')) return '"' + s.replace(/"/g, '""') + '"'
-  return s
+const FIELD_ALIASES = {
+  'stopLoss': 'initialSL',
+  'takeProfit': 'idealTP',
+  'lots': 'cantidad',
+  'result': 'resultado',
+  'rMultiple': 'ratio',
+  'emotions': 'emociones',
+  'strategy': 'estrategia',
+  'screenshots': 'captura'
 }
+const JSON_FIELDS = ['tags']
+const NUMERIC_FIELDS = ['id', 'sessionId', 'entryPrice', 'exitPrice', 'initialSL', 'stopLoss', 'idealTP', 'takeProfit', 'cantidad', 'lots', 'profit', 'ratio', 'rMultiple', 'fees', 'beneficioNeto']
 
 function readCSV(file) {
   ensureDir()
   if (!fs.existsSync(file)) return []
   const content = fs.readFileSync(file, 'utf8')
-  const lines = content.trim().split('\n')
-  if (lines.length < 2) return []
-  const headers = lines[0].split(',').map(h => h.trim())
-  return lines.slice(1).map(line => {
-    const parts = []
-    let current = '', inside = false
-    for (let i = 0; i < line.length; i++) {
-      if (line[i] === '"') { inside = !inside; continue }
-      if (line[i] === ',' && !inside) { parts.push(current); current = ''; continue }
-      current += line[i]
-    }
-    parts.push(current)
-    const row = {}
-    headers.forEach((h, i) => {
-      const val = parts[i] || ''
-      if (h === 'tags' || h === 'emotions' || h === 'screenshots') {
-        try { row[h] = val ? JSON.parse(val) : (h === 'screenshots' ? [] : []) }
-        catch { row[h] = [] }
-      } else if (h === 'data') {
-        try { row[h] = val ? JSON.parse(val) : {} }
-        catch { row[h] = {} }
-      } else if (['entryPrice', 'exitPrice', 'stopLoss', 'takeProfit', 'lots', 'profit', 'rMultiple', 'fees', 'id', 'sessionId'].includes(h)) {
-        row[h] = isNaN(Number(val)) ? val : Number(val)
-      } else {
-        row[h] = val
+  const parsed = Papa.parse(content, { header: true, skipEmptyLines: true })
+  if (!parsed.data || parsed.data.length === 0) return []
+  return parsed.data.map(row => {
+    for (const [oldKey, newKey] of Object.entries(FIELD_ALIASES)) {
+      if (row[oldKey] !== undefined && row[newKey] === undefined) {
+        row[newKey] = row[oldKey]
       }
-    })
+    }
+    for (const h of JSON_FIELDS) {
+      const val = row[h]
+      try { row[h] = val ? JSON.parse(val) : [] }
+      catch { row[h] = [] }
+    }
+    for (const h of NUMERIC_FIELDS) {
+      if (row[h] !== undefined && row[h] !== '') {
+        row[h] = isNaN(Number(row[h])) ? row[h] : Number(row[h])
+      }
+    }
     return row
   })
 }
 
 function writeCSV(file, rows) {
   ensureDir()
-  const header = CSV_HEADERS.join(',')
-  const lines = rows.map(row => CSV_HEADERS.map(h => escapeCSV(row[h])).join(','))
-  fs.writeFileSync(file, [header, ...lines].join('\n'))
+  const allKeys = new Set()
+  for (const row of rows) {
+    Object.keys(row).forEach(k => allKeys.add(k))
+  }
+  const fields = Array.from(allKeys)
+  const idIdx = fields.indexOf('id')
+  if (idIdx > 0) { fields.splice(idIdx, 1); fields.unshift('id') }
+
+  const cleanRows = rows.map(row => {
+    const clean = {}
+    for (const f of fields) {
+      const val = row[f]
+      if (val === null || val === undefined) clean[f] = ''
+      else if (typeof val === 'object') clean[f] = JSON.stringify(val)
+      else clean[f] = val
+    }
+    return clean
+  })
+  const csvContent = Papa.unparse({ fields, data: cleanRows })
+  const tmpFile = file + '.tmp'
+  fs.writeFileSync(tmpFile, csvContent, 'utf8')
+  fs.renameSync(tmpFile, file)
+}
+
+const opQueues = new Map()
+
+function enqueueFileOp(file, opFn) {
+  const prev = opQueues.get(file) || Promise.resolve()
+  const next = prev.then(opFn).catch(err => { console.error('File op error:', err.message) })
+  opQueues.set(file, next)
+  return next
 }
 
 const sessionsFile = () => path.join(DATA_DIR, 'sessions.json')
@@ -80,7 +104,6 @@ const tradesCSVFile = (sessionId) => path.join(DATA_DIR, `trades_${sessionId}.cs
 app.use(cors({ origin: true, credentials: true }))
 app.use(express.json({ limit: '10mb' }))
 
-// Sessions
 app.get('/api/sessions', (req, res) => {
   res.json(readJSON(sessionsFile()))
 })
@@ -112,19 +135,23 @@ app.put('/api/sessions/:sessionId', (req, res) => {
   res.json(sessions[idx])
 })
 
-app.delete('/api/sessions/:sessionId', (req, res) => {
+app.delete('/api/sessions/:sessionId', async (req, res) => {
   const { sessionId } = req.params
   let sessions = readJSON(sessionsFile())
   const session = sessions.find(s => String(s.id) === sessionId)
   if (!session) return res.status(404).json({ error: 'Sesión no encontrada' })
   const tf = tradesCSVFile(sessionId)
-  if (fs.existsSync(tf)) fs.unlinkSync(tf)
-  sessions = sessions.filter(s => String(s.id) !== sessionId)
-  writeJSON(sessionsFile(), sessions)
-  res.json({ success: true })
+  try {
+    await enqueueFileOp(tf, () => {
+      if (fs.existsSync(tf)) fs.unlinkSync(tf)
+      opQueues.delete(tf)
+    })
+    sessions = sessions.filter(s => String(s.id) !== sessionId)
+    writeJSON(sessionsFile(), sessions)
+    res.json({ success: true })
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// Trades (CSV)
 app.get('/api/sessions/:sessionId/trades', (req, res) => {
   const { sessionId } = req.params
   const sessions = readJSON(sessionsFile())
@@ -132,45 +159,68 @@ app.get('/api/sessions/:sessionId/trades', (req, res) => {
   res.json(readCSV(tradesCSVFile(sessionId)))
 })
 
-app.post('/api/sessions/:sessionId/trades', (req, res) => {
+app.post('/api/sessions/:sessionId/trades', async (req, res) => {
   const { sessionId } = req.params
   const sessions = readJSON(sessionsFile())
   if (!sessions.find(s => String(s.id) === sessionId)) return res.status(404).json({ error: 'Sesión no encontrada' })
-  const trades = readCSV(tradesCSVFile(sessionId))
-  const newTrade = { id: Date.now(), sessionId: Number(sessionId), ...req.body }
-  trades.push(newTrade)
-  writeCSV(tradesCSVFile(sessionId), trades)
-  res.json(newTrade)
+  const tf = tradesCSVFile(sessionId)
+  try {
+    const newTrade = await enqueueFileOp(tf, () => {
+      const trades = readCSV(tf)
+      const nt = { id: Date.now(), sessionId: Number(sessionId), ...req.body }
+      trades.push(nt)
+      writeCSV(tf, trades)
+      return nt
+    })
+    res.json(newTrade)
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-app.put('/api/sessions/:sessionId/trades/:id', (req, res) => {
+app.put('/api/sessions/:sessionId/trades/:id', async (req, res) => {
   const { sessionId, id } = req.params
   const sessions = readJSON(sessionsFile())
   if (!sessions.find(s => String(s.id) === sessionId)) return res.status(404).json({ error: 'Sesión no encontrada' })
-  const trades = readCSV(tradesCSVFile(sessionId))
-  const index = trades.findIndex(t => String(t.id) === id)
-  if (index === -1) return res.status(404).json({ error: 'Trade not found' })
-  trades[index] = { ...trades[index], ...req.body, id: trades[index].id, sessionId: Number(sessionId) }
-  writeCSV(tradesCSVFile(sessionId), trades)
-  res.json(trades[index])
+  const tf = tradesCSVFile(sessionId)
+  try {
+    const updated = await enqueueFileOp(tf, () => {
+      const trades = readCSV(tf)
+      const index = trades.findIndex(t => String(t.id) === id)
+      if (index === -1) throw new Error('Trade not found')
+      trades[index] = { ...trades[index], ...req.body, id: trades[index].id, sessionId: Number(sessionId) }
+      writeCSV(tf, trades)
+      return trades[index]
+    })
+    res.json(updated)
+  } catch (err) {
+    if (err.message === 'Trade not found') res.status(404).json({ error: 'Trade not found' })
+    else res.status(500).json({ error: err.message })
+  }
 })
 
-app.delete('/api/sessions/:sessionId/trades/:id', (req, res) => {
+app.delete('/api/sessions/:sessionId/trades/:id', async (req, res) => {
   const { sessionId, id } = req.params
   const sessions = readJSON(sessionsFile())
   if (!sessions.find(s => String(s.id) === sessionId)) return res.status(404).json({ error: 'Sesión no encontrada' })
-  let trades = readCSV(tradesCSVFile(sessionId))
-  trades = trades.filter(t => String(t.id) !== id)
-  writeCSV(tradesCSVFile(sessionId), trades)
-  res.json({ success: true })
+  const tf = tradesCSVFile(sessionId)
+  try {
+    await enqueueFileOp(tf, () => {
+      let trades = readCSV(tf)
+      trades = trades.filter(t => String(t.id) !== id)
+      writeCSV(tf, trades)
+    })
+    res.json({ success: true })
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-app.delete('/api/sessions/:sessionId/trades', (req, res) => {
+app.delete('/api/sessions/:sessionId/trades', async (req, res) => {
   const { sessionId } = req.params
   const sessions = readJSON(sessionsFile())
   if (!sessions.find(s => String(s.id) === sessionId)) return res.status(404).json({ error: 'Sesión no encontrada' })
-  writeCSV(tradesCSVFile(sessionId), [])
-  res.json({ success: true, message: 'Historial eliminado' })
+  const tf = tradesCSVFile(sessionId)
+  try {
+    await enqueueFileOp(tf, () => { writeCSV(tf, []) })
+    res.json({ success: true, message: 'Historial eliminado' })
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
 app.get('/api/sessions/:sessionId/backup', (req, res) => {
@@ -183,16 +233,18 @@ app.get('/api/sessions/:sessionId/backup', (req, res) => {
   res.send(JSON.stringify(trades, null, 2))
 })
 
-app.post('/api/sessions/:sessionId/restore', (req, res) => {
+app.post('/api/sessions/:sessionId/restore', async (req, res) => {
   const { sessionId } = req.params
   const sessions = readJSON(sessionsFile())
   if (!sessions.find(s => String(s.id) === sessionId)) return res.status(404).json({ error: 'Sesión no encontrada' })
   if (!Array.isArray(req.body)) return res.status(400).json({ error: 'El cuerpo debe ser un array de trades' })
-  writeCSV(tradesCSVFile(sessionId), req.body)
-  res.json({ message: 'Sesión restaurada', trades: req.body })
+  const tf = tradesCSVFile(sessionId)
+  try {
+    await enqueueFileOp(tf, () => { writeCSV(tf, req.body) })
+    res.json({ message: 'Sesión restaurada', trades: req.body })
+  } catch (err) { res.status(500).json({ error: err.message }) }
 })
 
-// Error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err.message)
   res.status(500).json({ error: err.message || 'Error interno' })

@@ -1,0 +1,9 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "command": {
+    "commit": {
+      "description": "Bump version, commit all changes, and push to GitHub",
+      "template": "Bump the version by incrementing the MINOR number (MAJOR.MINOR format), create a git tag, stage all changes, commit, push to origin master, AND add a new entry to server/changelog.json with the version, today's date, and the commit description. Steps:\n1. Get the LATEST tag: git tag --sort=-version:refname | Select-Object -First 1\n2. Parse vMAJOR.MINOR (e.g., v0.21), increment MINOR, form new tag (e.g., v0.22)\n3. Analyze the changes with git diff --stat and git diff HEAD to understand what was modified, then AUTO-GENERATE a concise commit message in Spanish summarizing the changes (do NOT ask the user for a message)\n4. Read server/changelog.json, prepend a new entry: {\"version\": \"vX.YY\", \"date\": \"YYYY-MM-DD\", \"description\": \"<AUTO_GENERATED_MESSAGE>\"}, write it back\n5. Stage all: git add -A\n6. Commit: git commit -m \"<AUTO_GENERATED_MESSAGE>\"\n7. Create the new tag on the new commit: git tag <NEW_VERSION>\n8. Push: git push origin master\n9. Push tags: git push origin --tags\nIMPORTANT: use PowerShell for all git commands. Create the tag AFTER the commit, not before. Add the changelog entry BEFORE staging. You MUST auto-generate the commit message from the actual changes in the repo. Do NOT ask the user for input. Execute all steps and report the new version."
+    }
+  }
+}

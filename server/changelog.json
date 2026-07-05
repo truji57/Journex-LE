@@ -1,0 +1,7 @@
+[
+    {
+        "version": "v0.22",
+        "date": "2026-07-05",
+        "description": "Fix crítico CSV: papaparse + escritura atómica + cola antirrace + mapeo campos frontend↔CSV; fix useEffect sin deps"
+    }
+]

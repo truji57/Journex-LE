@@ -612,7 +612,7 @@ function Dashboard({ trades, displayMode = 'dollar', initialCapital = 0, capital
         <div className="card-body">
           <h3 className="card-title">Beneficio por Símbolo</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={symbolChartData} cursor={false}>
+            <BarChart data={symbolChartData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="symbol" />
               <YAxis />
@@ -632,7 +632,7 @@ function Dashboard({ trades, displayMode = 'dollar', initialCapital = 0, capital
           <div className="card-body">
             <h3 className="card-title">Beneficio por Operación</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData} cursor={false}>
+              <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
                 <YAxis />
@@ -651,7 +651,7 @@ function Dashboard({ trades, displayMode = 'dollar', initialCapital = 0, capital
           <div className="card-body">
             <h3 className="card-title">Resumen Mensual</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={monthlyChartData} cursor={false}>
+              <BarChart data={monthlyChartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
                 <YAxis />
@@ -666,7 +666,7 @@ function Dashboard({ trades, displayMode = 'dollar', initialCapital = 0, capital
           <div className="card-body">
             <h3 className="card-title">Beneficio por Día</h3>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={dailyChartData} cursor={false}>
+              <BarChart data={dailyChartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="day" />
                 <YAxis />
