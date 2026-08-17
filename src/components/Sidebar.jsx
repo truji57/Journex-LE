@@ -7,7 +7,7 @@ function Sidebar({ activeTab, setActiveTab, sidebarCollapsed, setSidebarCollapse
     { key: 'trades', label: 'Trades', icon: <ChartBarIcon className="text-gray-300 w-5 h-5" /> },
     { key: 'calendar', label: 'Calendario', icon: <CalendarIcon className="text-gray-300 w-5 h-5" /> },
     { key: 'montecarlo', label: 'Monte Carlo', icon: <FireIcon className="text-gray-300 w-5 h-5" /> },
-    { key: 'robustness', label: 'Robustez', icon: <ShieldCheckIcon className="text-gray-300 w-5 h-5" /> }
+    { key: 'robustness', label: 'Random Subsampling', icon: <ShieldCheckIcon className="text-gray-300 w-5 h-5" /> }
   ]
 
   return (

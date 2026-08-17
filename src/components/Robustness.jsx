@@ -77,7 +77,7 @@ function Robustness({ trades, displayMode = 'dollar' }) {
     return (
       <div className="card bg-gray-900 shadow-lg">
         <div className="card-body text-center">
-          <h2 className="card-title justify-center">Test de Robustez</h2>
+          <h2 className="card-title justify-center">Test Random Subsampling</h2>
           <p className="text-gray-400">Se necesitan al menos 5 operaciones.</p>
         </div>
       </div>
@@ -88,9 +88,9 @@ function Robustness({ trades, displayMode = 'dollar' }) {
     <div className="space-y-6">
       <div className="card bg-gray-900 shadow-lg">
         <div className="card-body">
-          <h2 className="card-title">Test de Robustez</h2>
+          <h2 className="card-title">Test Random Subsampling</h2>
           <p className="text-sm text-gray-400 mb-4">
-            Elimina aleatoriamente un porcentaje de trades y recalcula las métricas miles de veces para medir qué tan robusta es tu estrategia. Si quitando trades al azar sigues siendo rentable, tu ventaja es real.
+            Elimina aleatoriamente un porcentaje de trades (submuestreo sin reemplazo) y recalcula las métricas miles de veces para medir qué tan robusta es tu estrategia. Si quitando trades al azar sigues siendo rentable, tu ventaja es real.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">

@@ -1,5 +1,10 @@
 [
     {
+        "version": "v1.29",
+        "date": "2026-08-17",
+        "description": "Renombrado del test de robustez a 'Random Subsampling' en el menú y títulos, con descripción de submuestreo sin reemplazo"
+    },
+    {
         "version": "v1.28",
         "date": "2026-08-17",
         "description": "Globos de ayuda de las métricas del Dashboard con el color de acento del tema"
