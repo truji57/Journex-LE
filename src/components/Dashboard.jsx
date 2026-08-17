@@ -8,7 +8,7 @@ import { getNet, getValue } from '../utils/tradeCalculations'
 import SummaryTable from './SummaryTable'
 
 const InfoIcon = ({ tip }) => (
-  <div className="tooltip tooltip-info" data-tip={tip}>
+  <div className="tooltip tooltip-accent" data-tip={tip}>
     <span className="inline-flex items-center justify-center w-4 h-4 text-xs border border-current rounded-full opacity-40 hover:opacity-90 cursor-help transition-opacity">
       i
     </span>
