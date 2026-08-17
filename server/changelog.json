@@ -1,5 +1,10 @@
 [
     {
+        "version": "v1.25",
+        "date": "2026-08-17",
+        "description": "updater.py ahora sincroniza el working tree a la ultima version de GitHub (git reset --hard + clean -fd), evitando archivos corruptos/obsoletos que causaban errores de sintaxis en el navegador"
+    },
+    {
         "version": "v1.24",
         "date": "2026-08-17",
         "description": "Fix updater.py: elimina archivos locales sueltos que venian en GitHub antes del pull y usa stash solo para cambios rastreados, evitando el error 'already exists, no checkout'"
