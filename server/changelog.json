@@ -1,5 +1,10 @@
 [
     {
+        "version": "v1.24",
+        "date": "2026-08-17",
+        "description": "Fix updater.py: elimina archivos locales sueltos que venian en GitHub antes del pull y usa stash solo para cambios rastreados, evitando el error 'already exists, no checkout'"
+    },
+    {
         "version": "v1.23",
         "date": "2026-08-17",
         "description": "Nueva pestaña de Robustez, importación de CSV de Journex (Live y Backtest), exportar trades a CSV, acceso desde red local con host dinámico en apiBase, fix layout de tags"
