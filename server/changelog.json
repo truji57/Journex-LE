@@ -1,5 +1,10 @@
 [
     {
+        "version": "v1.26",
+        "date": "2026-08-17",
+        "description": "Ajustes persistentes en servidor: sesiones operativas, tema, displayMode y tags se guardan en server/data/settings.json y se comparten entre navegadores"
+    },
+    {
         "version": "v1.25",
         "date": "2026-08-17",
         "description": "updater.py ahora sincroniza el working tree a la ultima version de GitHub (git reset --hard + clean -fd), evitando archivos corruptos/obsoletos que causaban errores de sintaxis en el navegador"

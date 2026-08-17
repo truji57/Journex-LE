@@ -99,7 +99,20 @@ function enqueueFileOp(file, opFn) {
 }
 
 const sessionsFile = () => path.join(DATA_DIR, 'sessions.json')
+const settingsFile = () => path.join(DATA_DIR, 'settings.json')
 const tradesCSVFile = (sessionId) => path.join(DATA_DIR, `trades_${sessionId}.csv`)
+
+function readSettings() {
+  ensureDir()
+  if (!fs.existsSync(settingsFile())) return {}
+  try { return JSON.parse(fs.readFileSync(settingsFile(), 'utf8')) || {} }
+  catch { return {} }
+}
+
+function writeSettings(data) {
+  ensureDir()
+  fs.writeFileSync(settingsFile(), JSON.stringify(data || {}, null, 2))
+}
 
 app.use(cors({ origin: true, credentials: true }))
 app.use(express.json({ limit: '100mb' }))
@@ -112,6 +125,15 @@ app.get('/api/version', (req, res) => {
   const changelog = readJSON(path.join(__dirname, 'changelog.json'))
   const version = changelog.length > 0 ? changelog[0].version : 'v0.0'
   res.json({ version })
+})
+
+app.get('/api/settings', (req, res) => {
+  res.json(readSettings())
+})
+
+app.put('/api/settings', (req, res) => {
+  writeSettings(req.body || {})
+  res.json({ success: true })
 })
 
 app.post('/api/sessions', (req, res) => {

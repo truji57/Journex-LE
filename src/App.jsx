@@ -133,8 +133,26 @@ function App() {
     }
   }, [showForm])
 
-  const loadUserSettings = () => {
-    const data = loadStoredSettings()
+  const loadUserSettings = async () => {
+    let data = null
+    let fromServer = false
+    try {
+      const response = await fetch(`${apiBase}/api/settings`)
+      if (response.ok) {
+        const remote = await response.json()
+        if (remote && Object.keys(remote).length > 0) { data = remote; fromServer = true }
+      }
+    } catch {}
+    if (!data) data = loadStoredSettings()
+    if (!fromServer && data && Object.keys(data).length > 0) {
+      try {
+        await fetch(`${apiBase}/api/settings`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        })
+      } catch {}
+    }
     setUserSettings(data)
     if (data.theme) {
       setTheme(data.theme)
@@ -439,7 +457,15 @@ function App() {
                   onNewTag={async (tag) => {
                     const settings = userSettings || { sessions: [], displayMode: 'dollar', tags: [] }
                     const newTags = [...(settings.tags || []), tag]
-                    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...settings, tags: newTags }))
+                    const updated = { ...settings, tags: newTags }
+                    localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated))
+                    try {
+                      await fetch(`${apiBase}/api/settings`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(updated)
+                      })
+                    } catch {}
                     loadUserSettings()
                   }}
                 />

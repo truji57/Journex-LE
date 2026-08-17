@@ -4,13 +4,27 @@ import { apiBase, api } from '../utils/tradeCalculations'
 
 const STORAGE_KEY = 'journex-le-settings'
 
-function loadSettings() {
+async function loadSettings() {
+  try {
+    const response = await fetch(`${apiBase}/api/settings`)
+    if (response.ok) {
+      const data = await response.json()
+      if (data && Object.keys(data).length > 0) return data
+    }
+  } catch {}
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {} }
   catch { return {} }
 }
 
-function saveSettingsToStorage(data) {
+async function saveSettingsToStorage(data) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+  try {
+    await fetch(`${apiBase}/api/settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+  } catch {}
 }
 
 function Settings({ selectedSession, onSettingsChange, onTradesRefresh, setTrades, onBack, backupFn, triggerRestore, theme, onThemeChange }) {
@@ -22,14 +36,15 @@ function Settings({ selectedSession, onSettingsChange, onTradesRefresh, setTrade
   const [newTag, setNewTag] = useState('')
 
   useEffect(() => {
-    const data = loadSettings()
-    setSessions(data.sessions || [])
-    setDisplayMode(data.displayMode || 'dollar')
-    setSavedTags(data.tags || [])
+    loadSettings().then(data => {
+      setSessions(data.sessions || [])
+      setDisplayMode(data.displayMode || 'dollar')
+      setSavedTags(data.tags || [])
+    })
   }, [])
 
-  const save = (newSessions, newDisplayMode, newTags, newTheme) => {
-    const data = loadSettings()
+  const save = async (newSessions, newDisplayMode, newTags, newTheme) => {
+    const data = await loadSettings()
     const merged = {
       ...data,
       sessions: newSessions !== undefined ? newSessions : data.sessions,
@@ -37,7 +52,7 @@ function Settings({ selectedSession, onSettingsChange, onTradesRefresh, setTrade
       tags: newTags !== undefined ? newTags : data.tags,
       theme: newTheme !== undefined ? newTheme : data.theme
     }
-    saveSettingsToStorage(merged)
+    await saveSettingsToStorage(merged)
     if (onSettingsChange) onSettingsChange()
   }
 
