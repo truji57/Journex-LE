@@ -1,5 +1,10 @@
 [
     {
+        "version": "v1.27",
+        "date": "2026-08-17",
+        "description": "Barra superior del selector de sesiones con el color del tema elegido y texto blanco; AGENTS.md con regla de hacer /commit solo a petición del usuario"
+    },
+    {
         "version": "v1.26",
         "date": "2026-08-17",
         "description": "Ajustes persistentes en servidor: sesiones operativas, tema, displayMode y tags se guardan en server/data/settings.json y se comparten entre navegadores"

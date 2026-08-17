@@ -325,10 +325,10 @@ function App() {
     return (
       <div className="min-h-screen bg-black text-base-content">
         <Toaster />
-        <header className="navbar bg-gradient-to-r from-indigo-900 via-gray-900 to-indigo-900 rounded-box mb-4 p-4 shadow-lg">
+        <header className="navbar bg-primary text-primary-content rounded-box mb-4 p-4 shadow-lg">
           <div className="flex-1 flex items-center gap-3">
-            <h1 className="text-xl font-extrabold text-primary tracking-tight">Journex LE</h1>
-            {appVersion && <span className="badge badge-sm badge-primary badge-outline">{appVersion}</span>}
+            <h1 className="text-xl font-extrabold text-white tracking-tight">Journex LE</h1>
+            {appVersion && <span className="badge badge-sm badge-outline border-white/40 text-white">{appVersion}</span>}
           </div>
         </header>
         <div className="container mx-auto p-4">
