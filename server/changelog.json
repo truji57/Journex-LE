@@ -1,7 +1,12 @@
 [
     {
-        "version": "v0.22",
-        "date": "2026-07-05",
-        "description": "Fix crítico CSV: papaparse + escritura atómica + cola antirrace + mapeo campos frontend↔CSV; fix useEffect sin deps"
+        "version": "v1.23",
+        "date": "2026-08-17",
+        "description": "Nueva pestaña de Robustez, importación de CSV de Journex (Live y Backtest), exportar trades a CSV, acceso desde red local con host dinámico en apiBase, fix layout de tags"
+    },
+    {
+        "version": "v1.22",
+        "date": "2026-08-17",
+        "description": "Cambio de puertos a 5177 (frontend) / 5178 (backend), label de versión en selector de sesiones, updater.bat + updater.py, comando /commit tipo Q7/Telbot_v2"
     }
 ]

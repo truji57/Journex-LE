@@ -307,7 +307,7 @@ function Dashboard({ trades, displayMode = 'dollar', initialCapital = 0, capital
 
           <div className="stat bg-gray-900 rounded-box min-h-32">
             <div className="stat-title flex items-center gap-2">
-              <span>Expectancy / Trade</span>
+              <span>EV (Expected Value)</span>
               <InfoIcon tip="Beneficio neto promedio por operación" />
             </div>
             <div className={`stat-value ${expectancyPerTrade >= 0 ? 'text-success' : 'text-error'}`}>

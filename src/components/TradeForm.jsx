@@ -362,7 +362,7 @@ function TradeForm({ onSubmit, onUpdate, onCancel, editingTrade, userSettings, e
               )}
             </div>
 
-            <div className="form-control md:col-span-2 lg:col-span-3">
+            <div className="form-control">
               <label className="label"><span className="label-text">Tags</span></label>
               <div className="flex flex-wrap gap-2 mb-2">
                 {formData.tags.map((tag, idx) => (

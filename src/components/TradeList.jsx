@@ -1,10 +1,41 @@
 import React, { useState } from 'react'
+import Papa from 'papaparse'
 
 function TradeList({ trades, onDelete, onEdit, userSettings }) {
   const [showAll, setShowAll] = useState(false)
   const [previewImage, setPreviewImage] = useState(null)
 
   const displayedTrades = showAll ? trades : trades.slice(0, 10)
+
+  const handleExport = () => {
+    const allKeys = new Set()
+    for (const t of trades) {
+      Object.keys(t).forEach(k => { if (k !== 'captura' && k !== 'screenshots') allKeys.add(k) })
+    }
+    const fields = Array.from(allKeys)
+    const idIdx = fields.indexOf('id')
+    if (idIdx > 0) { fields.splice(idIdx, 1); fields.unshift('id') }
+
+    const cleanRows = trades.map(t => {
+      const clean = {}
+      for (const f of fields) {
+        const val = t[f]
+        if (val === null || val === undefined) clean[f] = ''
+        else if (typeof val === 'object') clean[f] = JSON.stringify(val)
+        else clean[f] = val
+      }
+      return clean
+    })
+
+    const csv = Papa.unparse({ fields, data: cleanRows })
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `journex_trades_${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   if (trades.length === 0) {
     return (
@@ -16,6 +47,11 @@ function TradeList({ trades, onDelete, onEdit, userSettings }) {
 
   return (
     <div className="overflow-x-auto">
+      <div className="flex justify-end mb-3">
+        <button className="btn btn-sm btn-outline" onClick={handleExport}>
+          Exportar CSV ({trades.length})
+        </button>
+      </div>
       <table className="table table-zebra w-full">
         <thead>
           <tr>

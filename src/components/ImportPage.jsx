@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import * as XLSX from 'xlsx'
+import Papa from 'papaparse'
 import mt5Logo from '../assets/mt5_logo.png'
 import tradovateLogo from '../assets/tradovate_logo.png'
 import fxreplayLogo from '../assets/fxreplay_logo.png'
@@ -337,6 +338,50 @@ const ImportPage = ({ onBack, sessionType, userSettings }) => {
     reader.readAsArrayBuffer(file)
   }
 
+  const handleImportJournex = () => {
+    if (!file) return
+    setImporting(true)
+    setError('')
+    setMessage('Procesando archivo Journex...')
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const text = event.target.result
+        const parsed = Papa.parse(text, { header: true, skipEmptyLines: true })
+        if (!parsed.data || parsed.data.length === 0) { setError('CSV vacío'); setImporting(false); return }
+        const baseId = Date.now()
+        let counter = 0
+        const tradesArr = parsed.data.map(row => {
+          for (const f of ['entryPrice', 'exitPrice', 'initialSL', 'idealTP', 'profit', 'fees', 'beneficioNeto', 'ratio', 'cantidad', 'id']) {
+            if (row[f] !== undefined && row[f] !== '') row[f] = Number(row[f])
+          }
+          if (row.tags && typeof row.tags === 'string') {
+            try { row.tags = JSON.parse(row.tags) } catch { row.tags = [] }
+          }
+          if (!row.tags) row.tags = []
+          if (!row.id) row.id = baseId + (counter++)
+          if (!row.date) row.date = new Date().toISOString()
+          if (!row.type) row.type = 'long'
+          if (!row.sesion) row.sesion = detectSession(row.date)
+          if (!row.resultado) row.resultado = (Number(row.profit) || 0) >= 0 ? 'TakeProfit' : 'StopLoss'
+          row.notes = row.notes || 'Importado desde Journex'
+          return row
+        })
+        setMessage(`Detectadas ${tradesArr.length} operaciones. Redirigiendo...`)
+        setTimeout(() => {
+          sessionStorage.setItem('importedTrades', JSON.stringify(tradesArr))
+          sessionStorage.setItem('importPlatform', 'journex')
+          if (onBack) onBack()
+          else window.history.back()
+        }, 1000)
+      } catch (err) {
+        setError('Error procesando Journex: ' + err.message)
+        setImporting(false)
+      }
+    }
+    reader.readAsText(file)
+  }
+
   return (
     <div className="min-h-screen bg-black text-base-content">
       <div className="max-w-4xl mx-auto p-6">
@@ -360,9 +405,9 @@ const ImportPage = ({ onBack, sessionType, userSettings }) => {
           </div>
         )}
 
-        {/* Live: MT5, Tradovate y cTrader */}
+        {/* Live: MT5, Tradovate, cTrader y Journex */}
         {sessionType === 'Live' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* MT5 */}
             <div
               className={`card bg-gray-800 shadow-lg cursor-pointer border-2 transition-all ${selectedPlatform === 'mt5' ? 'border-primary' : 'border-transparent'}`}
@@ -464,13 +509,50 @@ const ImportPage = ({ onBack, sessionType, userSettings }) => {
                 )}
               </div>
             </div>
+
+            {/* Journex */}
+            <div
+              className={`card bg-gray-800 shadow-lg cursor-pointer border-2 transition-all ${selectedPlatform === 'journex' ? 'border-primary' : 'border-transparent'}`}
+              onClick={() => setSelectedPlatform('journex')}
+            >
+              <div className="card-body">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-3xl">📓</span>
+                  <h2 className="card-title text-primary">Journex</h2>
+                </div>
+                <p className="text-gray-400 text-sm mb-4">
+                  Archivo <strong>.csv</strong> exportado desde Journex con el botón Exportar. Mantiene todos los campos.
+                </p>
+                {selectedPlatform === 'journex' && (
+                  <>
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileChange}
+                      className="file-input file-input-bordered w-full mb-2"
+                    />
+                    {file && <p className="text-xs text-gray-400 mb-2">{file.name}</p>}
+                    <button
+                      className="btn btn-primary w-full"
+                      disabled={!file || importing}
+                      onClick={(e) => { e.stopPropagation(); handleImportJournex() }}
+                    >
+                      {importing ? 'Importando...' : 'Importar Journex'}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Backtest: solo FX Replay */}
+        {/* Backtest: FX Replay + Journex */}
         {sessionType === 'Backtest' && (
-          <div className="grid grid-cols-1 md:grid-cols-1 gap-6 max-w-md mx-auto">
-            <div className="card bg-gray-800 shadow-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+            <div
+              className={`card bg-gray-800 shadow-lg cursor-pointer border-2 transition-all ${selectedPlatform === 'fxreplay' || selectedPlatform === '' ? 'border-primary' : 'border-transparent'}`}
+              onClick={() => setSelectedPlatform('fxreplay')}
+            >
               <div className="card-body">
                 <div className="flex items-center gap-3 mb-2">
                   <img src={fxreplayLogo} alt="FX Replay" className="h-10" />
@@ -479,20 +561,57 @@ const ImportPage = ({ onBack, sessionType, userSettings }) => {
                 <p className="text-gray-400 text-sm mb-4">
                   Archivo debe ser <strong>.csv</strong> exportado de FX Replay. Se leerán columnas: id, dateStart, pair, side, entryPrice, avgClosePrice, amount, rPnL, initialSL, idealTP.
                 </p>
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={handleFileChange}
-                  className="file-input file-input-bordered w-full mb-2"
-                />
-                {file && <p className="text-xs text-gray-400 mb-2">{file.name}</p>}
-                <button
-                  className="btn btn-primary w-full"
-                  disabled={!file || importing}
-                  onClick={handleImportFXReplay}
-                >
-                  {importing ? 'Importando...' : 'Importar desde FX Replay'}
-                </button>
+                {(selectedPlatform === 'fxreplay' || selectedPlatform === '') && (
+                  <>
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileChange}
+                      className="file-input file-input-bordered w-full mb-2"
+                    />
+                    {file && <p className="text-xs text-gray-400 mb-2">{file.name}</p>}
+                    <button
+                      className="btn btn-primary w-full"
+                      disabled={!file || importing}
+                      onClick={(e) => { e.stopPropagation(); handleImportFXReplay() }}
+                    >
+                      {importing ? 'Importando...' : 'Importar desde FX Replay'}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div
+              className={`card bg-gray-800 shadow-lg cursor-pointer border-2 transition-all ${selectedPlatform === 'journex' ? 'border-primary' : 'border-transparent'}`}
+              onClick={() => setSelectedPlatform('journex')}
+            >
+              <div className="card-body">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-3xl">📓</span>
+                  <h2 className="card-title text-primary">Journex</h2>
+                </div>
+                <p className="text-gray-400 text-sm mb-4">
+                  Archivo <strong>.csv</strong> exportado desde Journex. Importa trades previamente exportados con todos sus campos.
+                </p>
+                {selectedPlatform === 'journex' && (
+                  <>
+                    <input
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileChange}
+                      className="file-input file-input-bordered w-full mb-2"
+                    />
+                    {file && <p className="text-xs text-gray-400 mb-2">{file.name}</p>}
+                    <button
+                      className="btn btn-primary w-full"
+                      disabled={!file || importing}
+                      onClick={(e) => { e.stopPropagation(); handleImportJournex() }}
+                    >
+                      {importing ? 'Importando...' : 'Importar Journex'}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>

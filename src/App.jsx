@@ -5,6 +5,7 @@ import TradeList from './components/TradeList'
 import Settings from './components/Settings'
 import Calendar from './components/Calendar'
 import MonteCarlo from './components/MonteCarlo'
+import Robustness from './components/Robustness'
 import ImportPage from './components/ImportPage'
 import CapitalForm from './components/CapitalForm'
 import SessionCreator from './components/SessionCreator'
@@ -46,6 +47,11 @@ function App() {
   const [editSessionCapital, setEditSessionCapital] = useState('')
   const [theme, setTheme] = useState(() => localStorage.getItem('journex-theme') || 'dark-blue')
   const importTradesRef = useRef(null)
+  const [appVersion, setAppVersion] = useState('')
+
+  useEffect(() => {
+    fetch(`${apiBase}/api/version`).then(r => r.json()).then(d => setAppVersion(d.version || '')).catch(() => {})
+  }, [])
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
@@ -119,7 +125,7 @@ function App() {
       importTradesRef.current?.(trades)
       setActiveTab('trades')
     } catch (e) { console.error('Error importando trades desde sessionStorage', e) }
-  }, [selectedSession])
+  }, [selectedSession, activeTab])
 
   useEffect(() => {
     if (showForm && formRef.current) {
@@ -302,8 +308,9 @@ function App() {
       <div className="min-h-screen bg-black text-base-content">
         <Toaster />
         <header className="navbar bg-gradient-to-r from-indigo-900 via-gray-900 to-indigo-900 rounded-box mb-4 p-4 shadow-lg">
-          <div className="flex-1">
+          <div className="flex-1 flex items-center gap-3">
             <h1 className="text-xl font-extrabold text-primary tracking-tight">Journex LE</h1>
+            {appVersion && <span className="badge badge-sm badge-primary badge-outline">{appVersion}</span>}
           </div>
         </header>
         <div className="container mx-auto p-4">
@@ -376,7 +383,7 @@ function App() {
                 <div className="flex items-center gap-2">
                   <span className="text-lg font-bold">{selectedSession.name}</span>
                   <span className="badge badge-outline text-xs">{selectedSession.type}</span>
-                  <button className="link link-primary link-hover text-xs" onClick={() => { setSelectedSession(null); setTrades([]) }}>
+                  <button className="link link-primary link-hover text-xs" onClick={() => { setSelectedSession(null); setTrades([]); loadSessions() }}>
                     Cambiar sesión
                   </button>
                 </div>
@@ -462,6 +469,9 @@ function App() {
               )}
               {activeTab === 'montecarlo' && (
                 <MonteCarlo trades={filteredTrades} displayMode={userSettings?.displayMode || 'dollar'} />
+              )}
+              {activeTab === 'robustness' && (
+                <Robustness trades={filteredTrades} displayMode={userSettings?.displayMode || 'dollar'} />
               )}
               {activeTab === 'import' && (
                 <ImportPage onBack={() => setActiveTab('dashboard')} sessionType={selectedSession?.type} userSettings={userSettings} />

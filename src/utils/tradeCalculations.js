@@ -29,7 +29,7 @@ export function detectSession(dateString, sessions) {
   return ''
 }
 
-export const apiBase = 'http://localhost:3001'
+export const apiBase = `${window.location.protocol}//${window.location.hostname}:5178`
 
 export async function api(path, method = 'GET', body = null) {
   const opts = { method, headers: { 'Content-Type': 'application/json' } }

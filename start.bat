@@ -31,8 +31,8 @@ echo ===================================
 echo  Journex LE esta listo!
 echo ===================================
 echo.
-echo Accede desde este equipo: http://localhost:3000
-echo Accede desde otro equipo en la red: http://%IP%:3000
+echo Accede desde este equipo: http://localhost:5177
+echo Accede desde otro equipo en la red: http://%IP%:5177
 echo.
 echo Presiona Ctrl+C para detener el servidor
 echo ===================================
@@ -42,6 +42,9 @@ REM Iniciar el backend
 start "Backend" cmd /k "npm run server"
 
 timeout /t 4 >nul
+
+REM Abrir navegador
+start http://localhost:5177
 
 REM Iniciar el servidor de desarrollo (frontend)
 call npm run dev

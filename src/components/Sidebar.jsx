@@ -1,12 +1,13 @@
 import React from 'react'
-import { HomeIcon, ChartBarIcon, CalendarIcon, FireIcon, Cog8ToothIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon, DocumentArrowUpIcon, PlusIcon } from "@heroicons/react/24/outline"
+import { HomeIcon, ChartBarIcon, CalendarIcon, FireIcon, ShieldCheckIcon, Cog8ToothIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon, DocumentArrowUpIcon, PlusIcon } from "@heroicons/react/24/outline"
 
 function Sidebar({ activeTab, setActiveTab, sidebarCollapsed, setSidebarCollapsed, showForm, toggleForm, showCapitalForm, toggleCapitalForm }) {
   const navItems = [
     { key: 'dashboard', label: 'Dashboard', icon: <HomeIcon className="text-gray-300 w-5 h-5" /> },
     { key: 'trades', label: 'Trades', icon: <ChartBarIcon className="text-gray-300 w-5 h-5" /> },
     { key: 'calendar', label: 'Calendario', icon: <CalendarIcon className="text-gray-300 w-5 h-5" /> },
-    { key: 'montecarlo', label: 'Monte Carlo', icon: <FireIcon className="text-gray-300 w-5 h-5" /> }
+    { key: 'montecarlo', label: 'Monte Carlo', icon: <FireIcon className="text-gray-300 w-5 h-5" /> },
+    { key: 'robustness', label: 'Robustez', icon: <ShieldCheckIcon className="text-gray-300 w-5 h-5" /> }
   ]
 
   return (

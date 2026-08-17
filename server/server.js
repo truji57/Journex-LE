@@ -5,7 +5,7 @@ const path = require('path')
 const Papa = require('papaparse')
 
 const app = express()
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT || 5178
 const DATA_DIR = path.join(__dirname, 'data')
 
 function ensureDir() {
@@ -102,10 +102,16 @@ const sessionsFile = () => path.join(DATA_DIR, 'sessions.json')
 const tradesCSVFile = (sessionId) => path.join(DATA_DIR, `trades_${sessionId}.csv`)
 
 app.use(cors({ origin: true, credentials: true }))
-app.use(express.json({ limit: '10mb' }))
+app.use(express.json({ limit: '100mb' }))
 
 app.get('/api/sessions', (req, res) => {
   res.json(readJSON(sessionsFile()))
+})
+
+app.get('/api/version', (req, res) => {
+  const changelog = readJSON(path.join(__dirname, 'changelog.json'))
+  const version = changelog.length > 0 ? changelog[0].version : 'v0.0'
+  res.json({ version })
 })
 
 app.post('/api/sessions', (req, res) => {
